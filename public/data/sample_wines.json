@@ -1,0 +1,79 @@
+{
+  "countries": [
+    "US", "France", "Italy", "Spain", "Portugal", "Germany", 
+    "Argentina", "Chile", "Australia", "South Africa", "New Zealand",
+    "Austria", "Greece", "Israel", "Hungary"
+  ],
+  "provinces": {
+    "US": ["California", "Washington", "Oregon", "New York", "Texas", "Virginia"],
+    "France": ["Bordeaux", "Burgundy", "Champagne", "Rhone Valley", "Loire Valley", "Alsace"],
+    "Italy": ["Tuscany", "Piedmont", "Veneto", "Sicily", "Emilia-Romagna", "Lombardy"],
+    "Spain": ["Rioja", "Ribera del Duero", "Priorat", "Galicia", "Catalonia", "Andalucia"],
+    "Argentina": ["Mendoza", "Salta", "San Juan", "La Rioja", "Patagonia"],
+    "Chile": ["Maipo Valley", "Colchagua Valley", "Casablanca Valley", "Rapel Valley"],
+    "Australia": ["South Australia", "Victoria", "New South Wales", "Western Australia"],
+    "Germany": ["Rheinhessen", "Mosel", "Rheingau", "Pfalz", "Baden"],
+    "South Africa": ["Coastal Region", "Stellenbosch", "Paarl", "Swartland"],
+    "New Zealand": ["Marlborough", "Central Otago", "Hawke's Bay", "Wairarapa"]
+  },
+  "regions": {
+    "California": ["Napa Valley", "Sonoma Valley", "Paso Robles", "Santa Barbara", "Alexander Valley", "Russian River Valley", "Carneros", "Howell Mountain", "Rutherford", "Stags Leap District"],
+    "Washington": ["Columbia Valley", "Walla Walla Valley", "Yakima Valley", "Red Mountain", "Horse Heaven Hills"],
+    "Oregon": ["Willamette Valley", "Dundee Hills", "Eola-Amity Hills", "Yamhill-Carlton", "Ribbon Ridge"],
+    "Bordeaux": ["Médoc", "Saint-Émilion", "Pomerol", "Pessac-Léognan", "Margaux", "Saint-Julien", "Pauillac", "Saint-Estèphe"],
+    "Burgundy": ["Côte de Nuits", "Côte de Beaune", "Chablis", "Côte Chalonnaise", "Mâconnais"],
+    "Tuscany": ["Chianti Classico", "Brunello di Montalcino", "Bolgheri", "Vino Nobile di Montepulciano", "Chianti"],
+    "Piedmont": ["Barolo", "Barbaresco", "Roero", "Langhe", "Asti"],
+    "Rioja": ["Rioja Alta", "Rioja Alavesa", "Rioja Baja"],
+    "Mendoza": ["Luján de Cuyo", "Maipú", "Uco Valley", "San Rafael"],
+    "Marlborough": ["Awatere Valley", "Wairau Valley", "Southern Valleys"]
+  },
+  "varieties": [
+    "Pinot Noir", "Chardonnay", "Cabernet Sauvignon", "Red Blend", "Bordeaux-style Red Blend",
+    "Riesling", "Sauvignon Blanc", "Syrah", "Rosé", "Merlot", "Zinfandel", "Malbec",
+    "Sangiovese", "Nebbiolo", "Tempranillo", "Pinot Grigio", "Cabernet Franc", "Port",
+    "Champagne Blend", "Grüner Veltliner", "Gewürztraminer", "Viognier", "Gamay",
+    "Grenache", "Mourvèdre", "Petite Sirah", "Pinot Blanc", "Semillon", "Chenin Blanc"
+  ],
+  "wineries": {
+    "California": [
+      "Robert Mondavi", "Opus One", "Cayuse", "Screaming Eagle", "Harlan Estate",
+      "Stag's Leap Wine Cellars", "Beringer", "Chateau Montelena", "Ridge Vineyards",
+      "Silver Oak", "Jordan", "Cakebread", "Duckhorn", "Staglin", "Heitz"
+    ],
+    "Bordeaux": [
+      "Château Margaux", "Château Lafite Rothschild", "Château Latour", 
+      "Château Mouton Rothschild", "Château Haut-Brion", "Château Pétrus",
+      "Château Cheval Blanc", "Château Ausone", "Château Ducru-Beaucaillou"
+    ],
+    "Burgundy": [
+      "Domaine de la Romanée-Conti", "Domaine Leroy", "Domaine Armand Rousseau",
+      "Domaine Dujac", "Domaine Leflaive", "Domaine Comte de Vogüé"
+    ],
+    "Tuscany": [
+      "Antinori", "Frescobaldi", "Tenuta San Guido", "Biondi-Santi", "Fontodi",
+      "Castello Banfi", "Marchesi Mazzei", "Poliziano", "Avignonesi"
+    ]
+  },
+  "designations": [
+    "Reserve", "Estate", "Reserva", "Gran Reserva", "Grand Cru", "Premier Cru",
+    "Classico", "Riserva", "Single Vineyard", "Old Vine", "Late Harvest",
+    "Ice Wine", "Botrytis", "Barrel Select", "Limited Release", "Signature",
+    "Heritage", "Vineyard Select", "Cuvee", "Brut", "Extra Brut", "Demi-Sec"
+  ],
+  "tasters": [
+    "Roger Voss", "Michael Schachner", "Kerin O'Keefe", "Paul Gregutt",
+    "Virginie Boone", "Matt Kettmann", "Anna Lee C. Iijima", "Sean P. Sullivan",
+    "Jim Gordon", "Lauren Buzzeo"
+  ],
+  "sample_descriptions": [
+    "Elegant and refined with bright acidity and notes of cherry, raspberry, and earth",
+    "Full-bodied and rich with dark fruit flavors, firm tannins, and a long finish",
+    "Crisp and refreshing with citrus, green apple, and mineral undertones",
+    "Complex and layered with oak spice, vanilla, and dark berry compote",
+    "Vibrant and fruit-forward with balanced acidity and soft tannins",
+    "Structured and age-worthy with earth, leather, and dried fruit characteristics",
+    "Bright and aromatic with floral notes, stone fruit, and a clean finish",
+    "Rich and decadent with honey, apricot, and buttery oak influence"
+  ]
+}

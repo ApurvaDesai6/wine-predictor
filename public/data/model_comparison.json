@@ -1,0 +1,93 @@
+{
+  "models": [
+    {
+      "name": "Decision Tree",
+      "type": "Baseline",
+      "metrics": {
+        "r2_score": 0.42,
+        "rmse": 52.34,
+        "mae": 28.67
+      },
+      "training_time_seconds": 2.3,
+      "is_baseline": true
+    },
+    {
+      "name": "CatBoost",
+      "type": "Gradient Boosting",
+      "metrics": {
+        "r2_score": 0.64,
+        "rmse": 38.21,
+        "mae": 19.45
+      },
+      "training_time_seconds": 45.2,
+      "hyperparameters": {
+        "iterations": 500,
+        "learning_rate": 0.05,
+        "depth": 8,
+        "l2_leaf_reg": 3
+      }
+    },
+    {
+      "name": "XGBoost",
+      "type": "Gradient Boosting",
+      "metrics": {
+        "r2_score": 0.62,
+        "rmse": 39.56,
+        "mae": 20.12
+      },
+      "training_time_seconds": 38.7,
+      "hyperparameters": {
+        "n_estimators": 500,
+        "learning_rate": 0.05,
+        "max_depth": 7,
+        "subsample": 0.8
+      }
+    },
+    {
+      "name": "LightGBM",
+      "type": "Gradient Boosting",
+      "metrics": {
+        "r2_score": 0.61,
+        "rmse": 40.12,
+        "mae": 20.89
+      },
+      "training_time_seconds": 12.4,
+      "hyperparameters": {
+        "n_estimators": 500,
+        "learning_rate": 0.05,
+        "num_leaves": 31,
+        "feature_fraction": 0.8
+      }
+    },
+    {
+      "name": "Ensemble",
+      "type": "Model Averaging",
+      "metrics": {
+        "r2_score": 0.66,
+        "rmse": 36.89,
+        "mae": 18.23
+      },
+      "training_time_seconds": 96.3,
+      "components": ["CatBoost", "XGBoost", "LightGBM"]
+    }
+  ],
+  "baseline_model": "Decision Tree",
+  "best_model": "Ensemble",
+  "improvement_over_baseline": {
+    "r2_improvement": "57%",
+    "rmse_improvement": "30%"
+  },
+  "dataset_info": {
+    "total_samples": 129971,
+    "training_samples": 103976,
+    "test_samples": 25995,
+    "features_used": 45,
+    "target_variable": "price"
+  },
+  "feature_engineering": {
+    "nlp_features": 50,
+    "target_encoded_features": 4,
+    "interaction_features": 3,
+    "original_features": 12
+  }
+}

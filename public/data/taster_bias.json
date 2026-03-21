@@ -1,0 +1,136 @@
+{
+  "title": "Taster Bias Analysis",
+  "description": "Analysis of systematic rating deviations among wine critics, identifying which tasters consistently rate higher or lower than the model predicts",
+  "methodology": "Residual analysis comparing taster's actual ratings vs. model-predicted ratings for wines of similar characteristics",
+  "tasters": [
+    {
+      "name": "Roger Voss",
+      "total_reviews": 25514,
+      "avg_rating_given": 88.4,
+      "avg_predicted": 88.1,
+      "bias_score": 0.3,
+      "bias_direction": "slightly_high",
+      "favorite_regions": ["Bordeaux", "Loire Valley"],
+      "favorite_varieties": ["Cabernet Sauvignon", "Merlot"],
+      "style_notes": "Tends to rate traditional European wines favorably"
+    },
+    {
+      "name": "Michael Schachner",
+      "total_reviews": 15141,
+      "avg_rating_given": 87.2,
+      "avg_predicted": 88.5,
+      "bias_score": -1.3,
+      "bias_direction": "slightly_low",
+      "favorite_regions": ["Rioja", "Ribera del Duero"],
+      "favorite_varieties": ["Tempranillo", "Garnacha"],
+      "style_notes": "Conservative rater, but generous with Spanish wines"
+    },
+    {
+      "name": "Kerin O'Keefe",
+      "total_reviews": 10632,
+      "avg_rating_given": 89.1,
+      "avg_predicted": 87.8,
+      "bias_score": 1.3,
+      "bias_direction": "slightly_high",
+      "favorite_regions": ["Tuscany", "Piedmont"],
+      "favorite_varieties": ["Sangiovese", "Nebbiolo"],
+      "style_notes": "Enthusiastic about Italian wines, especially Brunello"
+    },
+    {
+      "name": "Paul Gregutt",
+      "total_reviews": 9648,
+      "avg_rating_given": 88.7,
+      "avg_predicted": 88.2,
+      "bias_score": 0.5,
+      "bias_direction": "slightly_high",
+      "favorite_regions": ["Washington", "Oregon"],
+      "favorite_varieties": ["Cabernet Sauvignon", "Syrah"],
+      "style_notes": "Pacific Northwest specialist with generous ratings"
+    },
+    {
+      "name": "Virginie Boone",
+      "total_reviews": 9547,
+      "avg_rating_given": 88.9,
+      "avg_predicted": 88.1,
+      "bias_score": 0.8,
+      "bias_direction": "slightly_high",
+      "favorite_regions": ["Napa Valley", "Sonoma"],
+      "favorite_varieties": ["Cabernet Sauvignon", "Chardonnay"],
+      "style_notes": "California wine enthusiast with modern palate"
+    },
+    {
+      "name": "Matt Kettmann",
+      "total_reviews": 6332,
+      "avg_rating_given": 87.6,
+      "avg_predicted": 88.0,
+      "bias_score": -0.4,
+      "bias_direction": "slightly_low",
+      "favorite_regions": ["Santa Barbara", "Central Coast"],
+      "favorite_varieties": ["Pinot Noir", "Syrah"],
+      "style_notes": "Balanced rater focused on Central Coast wines"
+    },
+    {
+      "name": "Anna Lee C. Iijima",
+      "total_reviews": 5654,
+      "avg_rating_given": 89.5,
+      "avg_predicted": 87.9,
+      "bias_score": 1.6,
+      "bias_direction": "high",
+      "favorite_regions": ["Mosel", "Rheingau"],
+      "favorite_varieties": ["Riesling", "Silvaner"],
+      "style_notes": "German wine specialist with enthusiastic ratings"
+    },
+    {
+      "name": "Sean P. Sullivan",
+      "total_reviews": 5546,
+      "avg_rating_given": 87.3,
+      "avg_predicted": 88.4,
+      "bias_score": -1.1,
+      "bias_direction": "slightly_low",
+      "favorite_regions": ["Willamette Valley", "Columbia Valley"],
+      "favorite_varieties": ["Pinot Noir", "Riesling"],
+      "style_notes": "Critical rater with high standards for Oregon wines"
+    },
+    {
+      "name": "Jim Gordon",
+      "total_reviews": 4421,
+      "avg_rating_given": 88.1,
+      "avg_predicted": 88.0,
+      "bias_score": 0.1,
+      "bias_direction": "neutral",
+      "favorite_regions": ["Napa Valley", "Alexander Valley"],
+      "favorite_varieties": ["Cabernet Sauvignon", "Merlot"],
+      "style_notes": "Balanced and consistent across wine styles"
+    },
+    {
+      "name": "Lauren Buzzeo",
+      "total_reviews": 3956,
+      "avg_rating_given": 88.6,
+      "avg_predicted": 88.3,
+      "bias_score": 0.3,
+      "bias_direction": "slightly_high",
+      "favorite_regions": ["Mendoza", "Colchagua Valley"],
+      "favorite_varieties": ["Malbec", "Carmenère"],
+      "style_notes": "South American wine enthusiast"
+    }
+  ],
+  "overall_insights": {
+    "most_generous_taster": "Anna Lee C. Iijima",
+    "most_critical_taster": "Michael Schachner",
+    "most_consistent_taster": "Jim Gordon",
+    "regional_specialization_trend": "Tasters show clear bias toward their regions of expertise",
+    "impact_on_model": "Taster identity accounts for 17.8% of rating variance in the model"
+  },
+  "visualization_data": [
+    {"taster": "Anna Lee C. Iijima", "bias": 1.6, "reviews": 5654},
+    {"taster": "Kerin O'Keefe", "bias": 1.3, "reviews": 10632},
+    {"taster": "Virginie Boone", "bias": 0.8, "reviews": 9547},
+    {"taster": "Paul Gregutt", "bias": 0.5, "reviews": 9648},
+    {"taster": "Roger Voss", "bias": 0.3, "reviews": 25514},
+    {"taster": "Lauren Buzzeo", "bias": 0.3, "reviews": 3956},
+    {"taster": "Jim Gordon", "bias": 0.1, "reviews": 4421},
+    {"taster": "Matt Kettmann", "bias": -0.4, "reviews": 6332},
+    {"taster": "Sean P. Sullivan", "bias": -1.1, "reviews": 5546},
+    {"taster": "Michael Schachner", "bias": -1.3, "reviews": 15141}
+  ]
+}

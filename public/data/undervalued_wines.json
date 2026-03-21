@@ -1,0 +1,154 @@
+{
+  "description": "Wines identified as undervalued - where actual price is significantly below predicted price based on quality metrics",
+  "methodology": "Undervalued score = (Predicted Price - Actual Price) / Actual Price * 100",
+  "undervalued_wines": [
+    {
+      "rank": 1,
+      "title": "Ponzi 2014 Pinot Noir (Willamette Valley)",
+      "variety": "Pinot Noir",
+      "country": "US",
+      "province": "Oregon",
+      "region_1": "Willamette Valley",
+      "points": 94,
+      "actual_price": 35,
+      "predicted_price": 78,
+      "undervalued_score": 123,
+      "description": "Elegant and complex with cherry, earth and spice notes"
+    },
+    {
+      "rank": 2,
+      "title": "Ravenswood 2015 Old Vine Zinfandel (Sonoma Valley)",
+      "variety": "Zinfandel",
+      "country": "US",
+      "province": "California",
+      "region_1": "Sonoma Valley",
+      "points": 92,
+      "actual_price": 22,
+      "predicted_price": 48,
+      "undervalued_score": 118,
+      "description": "Rich, intense blackberry and pepper with smooth tannins"
+    },
+    {
+      "rank": 3,
+      "title": "Château Smith Haut Lafitte 2012 (Pessac-Léognan)",
+      "variety": "Red Blend",
+      "country": "France",
+      "province": "Bordeaux",
+      "region_1": "Pessac-Léognan",
+      "points": 96,
+      "actual_price": 85,
+      "predicted_price": 175,
+      "undervalued_score": 106,
+      "description": "Exceptional depth with cassis, tobacco and mineral notes"
+    },
+    {
+      "rank": 4,
+      "title": "Marqués de Murrieta 2010 Reserva (Rioja)",
+      "variety": "Tempranillo",
+      "country": "Spain",
+      "province": "Northern Spain",
+      "region_1": "Rioja",
+      "points": 93,
+      "actual_price": 28,
+      "predicted_price": 55,
+      "undervalued_score": 96,
+      "description": "Classic Rioja with leather, cherry and vanilla complexity"
+    },
+    {
+      "rank": 5,
+      "title": "Leeuwin Estate 2015 Art Series Chardonnay (Margaret River)",
+      "variety": "Chardonnay",
+      "country": "Australia",
+      "province": "Western Australia",
+      "region_1": "Margaret River",
+      "points": 95,
+      "actual_price": 65,
+      "predicted_price": 120,
+      "undervalued_score": 85,
+      "description": "Luminous citrus and stone fruit with creamy texture"
+    },
+    {
+      "rank": 6,
+      "title": "Tablas Creek 2016 Esprit de Tablas (Paso Robles)",
+      "variety": "Rhône-style Red Blend",
+      "country": "US",
+      "province": "California",
+      "region_1": "Paso Robles",
+      "points": 93,
+      "actual_price": 45,
+      "predicted_price": 82,
+      "undervalued_score": 82,
+      "description": "Elegant GSM blend with dark fruit and herbal complexity"
+    },
+    {
+      "rank": 7,
+      "title": "Weingut Keller 2015 Riesling (Rheinhessen)",
+      "variety": "Riesling",
+      "country": "Germany",
+      "province": "Rheinhessen",
+      "region_1": "Rheinhessen",
+      "points": 95,
+      "actual_price": 48,
+      "predicted_price": 85,
+      "undervalued_score": 77,
+      "description": "Brilliant acidity with stone fruit and mineral drive"
+    },
+    {
+      "rank": 8,
+      "title": "Catena Zapata 2014 Malbec (Mendoza)",
+      "variety": "Malbec",
+      "country": "Argentina",
+      "province": "Mendoza",
+      "region_1": "Mendoza",
+      "points": 94,
+      "actual_price": 35,
+      "predicted_price": 60,
+      "undervalued_score": 71,
+      "description": "Deep purple with black fruit and violet aromatics"
+    },
+    {
+      "rank": 9,
+      "title": "Domaine Faiveley 2014 Gevrey-Chambertin (Burgundy)",
+      "variety": "Pinot Noir",
+      "country": "France",
+      "province": "Burgundy",
+      "region_1": "Côte de Nuits",
+      "points": 93,
+      "actual_price": 68,
+      "predicted_price": 115,
+      "undervalued_score": 69,
+      "description": "Classic Burgundian elegance with red berry and earth"
+    },
+    {
+      "rank": 10,
+      "title": "Kanonkop 2015 Paul Sauer (Stellenbosch)",
+      "variety": "Bordeaux-style Red Blend",
+      "country": "South Africa",
+      "province": "Coastal Region",
+      "region_1": "Stellenbosch",
+      "points": 94,
+      "actual_price": 55,
+      "predicted_price": 92,
+      "undervalued_score": 67,
+      "description": "Structured and age-worthy with cassis and cedar"
+    }
+  ],
+  "total_undervalued_count": 1847,
+  "average_undervalued_score": 42.3,
+  "insights": {
+    "most_undervalued_regions": [
+      {"region": "Willamette Valley", "avg_discount": 38},
+      {"region": "Mendoza", "avg_discount": 35},
+      {"region": "Stellenbosch", "avg_discount": 32},
+      {"region": "Rioja", "avg_discount": 28},
+      {"region": "Margaret River", "avg_discount": 26}
+    ],
+    "most_undervalued_varieties": [
+      {"variety": "Tempranillo", "avg_discount": 34},
+      {"variety": "Malbec", "avg_discount": 31},
+      {"variety": "Riesling", "avg_discount": 29},
+      {"variety": "Zinfandel", "avg_discount": 27},
+      {"variety": "Rhône-style Red Blend", "avg_discount": 25}
+    ]
+  }
+}

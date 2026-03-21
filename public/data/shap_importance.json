@@ -1,0 +1,49 @@
+{
+  "price_model": {
+    "title": "SHAP Feature Importance - Price Prediction Model",
+    "features": [
+      {"feature": "points", "importance": 0.342, "direction": "higher_increases_price", "description": "Higher-rated wines command premium prices"},
+      {"feature": "variety_Pinot Noir", "importance": 0.156, "direction": "varies", "description": "Pinot Noir variety impact on pricing"},
+      {"feature": "region_1_Napa Valley", "importance": 0.134, "direction": "higher_increases_price", "description": "Napa Valley wines have premium pricing"},
+      {"feature": "winery_encoded", "importance": 0.121, "direction": "varies", "description": "Winery reputation significantly affects price"},
+      {"feature": "tfidf_fruity", "importance": 0.089, "direction": "varies", "description": "Fruity flavor profile impact"},
+      {"feature": "province_California", "importance": 0.078, "direction": "higher_increases_price", "description": "California wines command higher prices"},
+      {"feature": "tfidf_oaky", "importance": 0.067, "direction": "higher_increases_price", "description": "Oak barrel aging indicates premium wines"},
+      {"feature": "variety_Chardonnay", "importance": 0.056, "direction": "varies", "description": "Chardonnay variety pricing impact"},
+      {"feature": "designation_Reserve", "importance": 0.045, "direction": "higher_increases_price", "description": "Reserve designation adds value"},
+      {"feature": "tfidf_tannic", "importance": 0.043, "direction": "higher_increases_price", "description": "Tannic structure indicates quality"},
+      {"feature": "country_US", "importance": 0.039, "direction": "varies", "description": "US origin pricing influence"},
+      {"feature": "tfidf_smooth", "importance": 0.036, "direction": "varies", "description": "Smooth texture description impact"},
+      {"feature": "region_1_Willamette Valley", "importance": 0.034, "direction": "higher_increases_price", "description": "Oregon's premier wine region premium"},
+      {"feature": "variety_Cabernet Sauvignon", "importance": 0.031, "direction": "higher_increases_price", "description": "Cabernet Sauvignon variety premium"},
+      {"feature": "taster_name_encoded", "importance": 0.028, "direction": "varies", "description": "Taster influence on wine valuation"}
+    ]
+  },
+  "rating_model": {
+    "title": "SHAP Feature Importance - Rating Prediction Model",
+    "features": [
+      {"feature": "price", "importance": 0.289, "direction": "higher_increases_rating", "description": "Higher priced wines tend to receive higher ratings"},
+      {"feature": "taster_name_encoded", "importance": 0.178, "direction": "varies", "description": "Individual taster preferences significantly impact scores"},
+      {"feature": "winery_encoded", "importance": 0.134, "direction": "higher_increases_rating", "description": "Established wineries receive higher ratings"},
+      {"feature": "tfidf_complex", "importance": 0.098, "direction": "higher_increases_rating", "description": "Complex flavor profiles correlate with higher ratings"},
+      {"feature": "variety_Pinot Noir", "importance": 0.087, "direction": "varies", "description": "Pinot Noir variety rating patterns"},
+      {"feature": "region_1_Napa Valley", "importance": 0.076, "direction": "higher_increases_rating", "description": "Napa Valley wines consistently rate higher"},
+      {"feature": "tfidf_balanced", "importance": 0.065, "direction": "higher_increases_rating", "description": "Balanced wines receive favorable reviews"},
+      {"feature": "province_Burgundy", "importance": 0.054, "direction": "higher_increases_rating", "description": "Burgundy wines have high average ratings"},
+      {"feature": "vintage_year", "importance": 0.048, "direction": "varies", "description": "Vintage year affects perceived quality"},
+      {"feature": "tfidf_elegant", "importance": 0.042, "direction": "higher_increases_rating", "description": "Elegant descriptors indicate quality"},
+      {"feature": "designation_Grand Cru", "importance": 0.039, "direction": "higher_increases_rating", "description": "Grand Cru designation guarantees high ratings"},
+      {"feature": "country_France", "importance": 0.036, "direction": "higher_increases_rating", "description": "French wines have rating advantage"},
+      {"feature": "variety_Cabernet Sauvignon", "importance": 0.032, "direction": "varies", "description": "Cabernet Sauvignon rating patterns"},
+      {"feature": "tfidf_rich", "importance": 0.029, "direction": "higher_increases_rating", "description": "Rich descriptors correlate with quality"},
+      {"feature": "region_1_Bordeaux", "importance": 0.026, "direction": "higher_increases_rating", "description": "Bordeaux region rating premium"}
+    ]
+  },
+  "insights": {
+    "top_price_drivers": ["points", "variety", "region", "winery"],
+    "top_rating_drivers": ["price", "taster", "winery", "region"],
+    "nlp_impact": "TF-IDF features contributed 12% to model performance improvement",
+    "taster_bias_detected": true,
+    "regional_premium": "Napa Valley wines average 45% higher prices than similar wines from other regions"
+  }
+}
