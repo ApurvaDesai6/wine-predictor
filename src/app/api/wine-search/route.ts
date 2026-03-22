@@ -47,6 +47,7 @@ async function searchWithZAI(query: string): Promise<WineSearchResult[]> {
         }
       }],
       max_tokens: 1000,
+      thinking: { type: 'disabled' },
     }),
   });
 

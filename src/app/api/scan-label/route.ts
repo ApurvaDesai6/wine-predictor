@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
           ]
         }],
         max_tokens: 800,
+        thinking: { type: 'disabled' },
       }),
     });
 
