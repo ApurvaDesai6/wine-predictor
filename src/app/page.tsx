@@ -164,13 +164,29 @@ export default function WineScanner() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Compress image before storing to avoid huge base64 payloads
+      const img = new Image();
       const reader = new FileReader();
       reader.onloadend = () => {
-        setUploadedImage(reader.result as string);
-        setScanResult(null);
-        setPrediction(null);
-        setLivePrices([]);
-        setError(null);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX = 1024;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.8);
+          setUploadedImage(compressed);
+          setScanResult(null);
+          setPrediction(null);
+          setLivePrices([]);
+          setError(null);
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }

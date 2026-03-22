@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import ZAI from 'z-ai-web-dev-sdk';
 
 export interface WineSearchResult {
   name: string;
@@ -20,166 +21,275 @@ export interface WineSearchResponse {
   error?: string;
 }
 
-async function searchWithZAI(query: string): Promise<WineSearchResult[]> {
-  const apiKey = process.env.ZAI_API_KEY;
-  if (!apiKey) throw new Error('ZAI_API_KEY not set');
-
-  // Use Z.AI's GLM-4.7-Flash (free) with web search tool
-  const res = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'GLM-4.7-Flash',
-      messages: [{
-        role: 'user',
-        content: `Search for wine prices for: "${query}". Find real current retail prices from wine retailers. Return ONLY a JSON array of results, no other text. Each result: {"name":"full wine name","merchant":"retailer name","price":29.99,"url":"product url","rating":4.2,"region":"wine region"}. Return at least 3 results if possible.`
-      }],
-      tools: [{
-        type: 'web_search',
-        web_search: {
-          enable: 'True',
-          search_result: 'True',
-          search_engine: 'search-prime',
-          count: '10',
-        }
-      }],
-      max_tokens: 1000,
-      thinking: { type: 'disabled' },
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text().catch(() => '');
-    throw new Error(`Z.AI API error ${res.status}: ${err.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  const content = data.choices?.[0]?.message?.content || '';
-  console.log('Z.AI search response:', content.slice(0, 500));
-
-  // Try to parse JSON array from response
-  const jsonMatch = content.match(/\[[\s\S]*\]/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return parsed.filter((r: any) => r.name).map((r: any) => ({
-        name: r.name || '',
-        merchant: r.merchant || 'Online',
-        price: typeof r.price === 'number' ? r.price : parseFloat(r.price) || 0,
-        url: r.url || '',
-        rating: r.rating || undefined,
-        vintage: r.vintage || undefined,
-        region: r.region || undefined,
-      })).slice(0, 8);
-    } catch { /* fall through */ }
-  }
-
-  // Also check web_search results in the response
-  const webResults = data.web_search || [];
-  if (webResults.length > 0) {
-    return webResults.slice(0, 8).map((r: any) => {
-      const priceMatch = (r.content || '').match(/\$(\d+(?:\.\d{2})?)/);
-      return {
-        name: r.title || '',
-        merchant: r.media || 'Web',
-        price: priceMatch ? parseFloat(priceMatch[1]) : 0,
-        url: r.link || '',
-      };
-    }).filter((r: WineSearchResult) => r.price > 0);
-  }
-
-  return [];
-}
-
-// Fallback: Vivino API (works from non-cloud IPs)
-async function searchVivino(query: string): Promise<WineSearchResult[]> {
-  const url = `https://www.vivino.com/api/explore/explore?country_code=US&currency_code=USD&min_rating=1&order_by=relevance&order=desc&page=1&q=${encodeURIComponent(query)}`;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
-  });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return (data?.explore_vintage?.matches || []).slice(0, 8).map((m: any) => {
-    const v = m.vintage || {};
-    const w = v.wine || {};
-    const winery = w.winery || {};
-    const region = w.region || {};
-    const price = m.price || {};
-    const img = v.image?.variations?.bottle_medium || v.image?.location;
-    return {
-      name: `${winery.name || ''} ${w.name || v.name || ''}`.trim(),
-      merchant: 'Vivino',
-      price: price.amount || 0,
-      url: `https://www.vivino.com/w/${w.id || ''}`,
-      rating: v.statistics?.ratings_average || undefined,
-      vintage: v.year?.toString() || undefined,
-      region: region.name || undefined,
-      image: img ? (img.startsWith('http') ? img : `https:${img}`) : undefined,
-    };
-  }).filter((r: WineSearchResult) => r.name);
-}
-
+/**
+ * Wine Search API
+ * 
+ * Searches multiple wine retailers for live pricing using web search.
+ * Currently searches Wine-Searcher, Vivino, and other wine retailers.
+ */
 export async function GET(request: NextRequest) {
-  const sp = request.nextUrl.searchParams;
-  const wineName = sp.get('name');
-  const variety = sp.get('variety');
-  const vintage = sp.get('vintage');
-  const region = sp.get('region');
-
+  const searchParams = request.nextUrl.searchParams;
+  const wineName = searchParams.get('name');
+  const variety = searchParams.get('variety');
+  const vintage = searchParams.get('vintage');
+  const region = searchParams.get('region');
+  
   if (!wineName && !variety) {
     return NextResponse.json(
-      { success: false, error: 'Provide wine name or variety', results: [], query: '', sources: [], timestamp: new Date().toISOString() },
+      { 
+        success: false, 
+        error: 'Please provide wine name or variety',
+        results: [],
+        query: '',
+        sources: [],
+        timestamp: new Date().toISOString()
+      } as WineSearchResponse,
       { status: 400 }
     );
   }
-
-  const query = [wineName, vintage, variety, region].filter(Boolean).join(' ');
-
+  
+  // Build search query
+  const queryParts = [
+    wineName,
+    vintage,
+    variety,
+    region,
+    'wine',
+    'price',
+    'buy'
+  ].filter(Boolean);
+  
+  const searchQuery = queryParts.join(' ');
+  
   try {
-    // Try Z.AI web search first (works from cloud IPs)
-    let results = await searchWithZAI(query);
-    let sources = ['Web Search'];
-
-    // Fallback to Vivino if Z.AI returns nothing
-    if (results.length === 0) {
-      results = await searchVivino(query);
-      sources = ['Vivino'];
-    }
-
-    return NextResponse.json({
-      success: true, query, results, sources,
-      timestamp: new Date().toISOString(),
-    } as WineSearchResponse);
-  } catch (error: any) {
-    console.error('Wine search error:', error.message);
-    // Last resort fallback
-    return NextResponse.json({
-      success: true, query,
-      results: [{ name: query, merchant: 'Vivino', price: 0, url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`, region: 'Search on Vivino' }],
-      sources: ['Vivino (direct link)'],
-      timestamp: new Date().toISOString(),
+    const zai = await ZAI.create();
+    
+    // Search for wine prices
+    const searchResults = await zai.functions.invoke('web_search', {
+      query: searchQuery,
+      num: 10
     });
+    
+    // Parse and structure results
+    const wineResults: WineSearchResult[] = [];
+    const sources = new Set<string>();
+    
+    for (const result of searchResults) {
+      const url = result.url;
+      const hostName = result.host_name;
+      
+      // Extract merchant from hostname
+      let merchant = 'Unknown';
+      if (hostName.includes('wine-searcher')) {
+        merchant = 'Wine-Searcher';
+      } else if (hostName.includes('vivino')) {
+        merchant = 'Vivino';
+      } else if (hostName.includes('wine.com')) {
+        merchant = 'Wine.com';
+      } else if (hostName.includes('totalwine')) {
+        merchant = 'Total Wine';
+      } else if (hostName.includes('bevmo')) {
+        merchant = 'BevMo';
+      } else if (hostName.includes('instacart')) {
+        merchant = 'Instacart';
+      } else if (hostName.includes('drizly')) {
+        merchant = 'Drizly';
+      } else if (hostName.includes('vivant')) {
+        merchant = 'Vivant';
+      } else if (hostName.includes('winespectator')) {
+        merchant = 'Wine Spectator';
+      } else {
+        // Clean up hostname for display
+        merchant = hostName
+          .replace('www.', '')
+          .replace('.com', '')
+          .replace('.net', '')
+          .replace('.org', '')
+          .split('.')[0];
+        merchant = merchant.charAt(0).toUpperCase() + merchant.slice(1);
+      }
+      
+      sources.add(merchant);
+      
+      // Try to extract price from snippet
+      const priceMatch = result.snippet.match(/\$(\d+(?:\.\d{2})?)/);
+      const price = priceMatch ? parseFloat(priceMatch[1]) : null;
+      
+      // Extract rating if present
+      const ratingMatch = result.snippet.match(/(\d(?:\.\d)?)\s*(?:\/5|stars?)/i);
+      const rating = ratingMatch ? parseFloat(ratingMatch[1]) : null;
+      
+      // Extract vintage
+      const vintageMatch = result.snippet.match(/\b(19[9][0-9]|20[0-2][0-9])\b/);
+      const foundVintage = vintageMatch ? vintageMatch[1] : vintage;
+      
+      wineResults.push({
+        name: result.name,
+        merchant,
+        price: price || 0,
+        url: url,
+        rating: rating || undefined,
+        vintage: foundVintage,
+        region: region || undefined,
+      });
+    }
+    
+    // Sort results - prioritize those with prices
+    const sortedResults = wineResults.sort((a, b) => {
+      // Prioritize results with prices
+      if (a.price && !b.price) return -1;
+      if (!a.price && b.price) return 1;
+      // Then by price (ascending)
+      if (a.price && b.price) return a.price - b.price;
+      return 0;
+    });
+    
+    // Limit to top results
+    const limitedResults = sortedResults.slice(0, 8);
+    
+    const response: WineSearchResponse = {
+      success: true,
+      query: searchQuery,
+      results: limitedResults,
+      sources: Array.from(sources),
+      timestamp: new Date().toISOString()
+    };
+    
+    return NextResponse.json(response);
+    
+  } catch (error) {
+    console.error('Wine search error:', error);
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to search for wine prices. Please try again.',
+        query: searchQuery,
+        results: [],
+        sources: [],
+        timestamp: new Date().toISOString()
+      } as WineSearchResponse,
+      { status: 500 }
+    );
   }
 }
 
+/**
+ * POST endpoint for more detailed searches
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { name, winery, variety, vintage, region, country } = await request.json();
-    const query = [name || winery, vintage, variety, region, country].filter(Boolean).join(' ');
-    let results = await searchWithZAI(query);
-    if (results.length === 0) results = await searchVivino(query);
+    const body = await request.json();
+    const { 
+      name, 
+      winery, 
+      variety, 
+      vintage, 
+      region, 
+      country 
+    } = body;
+    
+    // Build comprehensive search query
+    const queryParts = [
+      name || winery,
+      vintage,
+      variety,
+      region,
+      country,
+      'wine',
+      'price',
+      'buy online'
+    ].filter(Boolean);
+    
+    const searchQuery = queryParts.join(' ');
+    
+    const zai = await ZAI.create();
+    
+    // Search multiple queries for better coverage
+    const searches = await Promise.all([
+      zai.functions.invoke('web_search', {
+        query: `${name || winery} ${vintage || ''} ${variety || ''} wine price buy`.trim(),
+        num: 5
+      }),
+      zai.functions.invoke('web_search', {
+        query: `${name || winery} ${vintage || ''} site:wine-searcher.com`.trim(),
+        num: 3
+      }),
+      zai.functions.invoke('web_search', {
+        query: `${name || winery} ${vintage || ''} site:vivino.com`.trim(),
+        num: 3
+      })
+    ]);
+    
+    // Combine and deduplicate results
+    const seenUrls = new Set<string>();
+    const wineResults: WineSearchResult[] = [];
+    const sources = new Set<string>();
+    
+    for (const searchResult of searches) {
+      for (const result of searchResult) {
+        if (seenUrls.has(result.url)) continue;
+        seenUrls.add(result.url);
+        
+        const hostName = result.host_name;
+        let merchant = 'Unknown';
+        
+        if (hostName.includes('wine-searcher')) merchant = 'Wine-Searcher';
+        else if (hostName.includes('vivino')) merchant = 'Vivino';
+        else if (hostName.includes('wine.com')) merchant = 'Wine.com';
+        else if (hostName.includes('totalwine')) merchant = 'Total Wine';
+        else if (hostName.includes('bevmo')) merchant = 'BevMo';
+        else if (hostName.includes('instacart')) merchant = 'Instacart';
+        else {
+          merchant = hostName.replace('www.', '').replace('.com', '').split('.')[0];
+          merchant = merchant.charAt(0).toUpperCase() + merchant.slice(1);
+        }
+        
+        sources.add(merchant);
+        
+        const priceMatch = result.snippet.match(/\$(\d+(?:\.\d{2})?)/);
+        const ratingMatch = result.snippet.match(/(\d(?:\.\d)?)\s*(?:\/5|stars?)/i);
+        
+        wineResults.push({
+          name: result.name,
+          merchant,
+          price: priceMatch ? parseFloat(priceMatch[1]) : 0,
+          url: result.url,
+          rating: ratingMatch ? parseFloat(ratingMatch[1]) : undefined,
+          vintage: vintage,
+          region: region,
+        });
+      }
+    }
+    
+    // Sort by price availability and value
+    const sortedResults = wineResults.sort((a, b) => {
+      if (a.price && !b.price) return -1;
+      if (!a.price && b.price) return 1;
+      if (a.price && b.price) return a.price - b.price;
+      return 0;
+    }).slice(0, 10);
+    
     return NextResponse.json({
-      success: true, query, results,
-      sources: results[0]?.merchant === 'Vivino' ? ['Vivino'] : ['Web Search'],
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('Wine search POST error:', error.message);
+      success: true,
+      query: searchQuery,
+      results: sortedResults,
+      sources: Array.from(sources),
+      timestamp: new Date().toISOString()
+    } as WineSearchResponse);
+    
+  } catch (error) {
+    console.error('Wine search POST error:', error);
+    
     return NextResponse.json(
-      { success: false, error: 'Search failed. Try again.', query: '', results: [], sources: [], timestamp: new Date().toISOString() },
+      {
+        success: false,
+        error: 'Failed to search for wine prices',
+        query: '',
+        results: [],
+        sources: [],
+        timestamp: new Date().toISOString()
+      } as WineSearchResponse,
       { status: 500 }
     );
   }
