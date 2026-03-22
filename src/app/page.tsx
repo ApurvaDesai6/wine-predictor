@@ -169,7 +169,7 @@ export default function WineScanner() {
       reader.onloadend = () => {
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX = 512;
+          const MAX = 768;
           let w = img.width, h = img.height;
           if (w > MAX || h > MAX) {
             if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -178,7 +178,7 @@ export default function WineScanner() {
           canvas.width = w;
           canvas.height = h;
           canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-          const compressed = canvas.toDataURL('image/jpeg', 0.6);
+          const compressed = canvas.toDataURL('image/jpeg', 0.7);
           console.log('Compressed image size:', Math.round(compressed.length / 1024), 'KB');
           setUploadedImage(compressed);
           setScanResult(null);
