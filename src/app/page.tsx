@@ -201,17 +201,32 @@ export default function WineScanner() {
     setLivePrices([]);
 
     try {
+      // Debug: log image size
+      const imgSize = Math.round(uploadedImage.length / 1024);
+      console.log('Sending image to scan-label, size:', imgSize, 'KB');
+
       // Step 1: Scan the label
-      const scanResponse = await fetch('/api/scan-label', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: uploadedImage }),
-      });
+      let scanResponse: Response;
+      try {
+        scanResponse = await fetch('/api/scan-label', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: uploadedImage }),
+        });
+      } catch (fetchErr: any) {
+        throw new Error(`Network error (image ${imgSize}KB): ${fetchErr.message}`);
+      }
 
-      const scanData: ScanResult = await scanResponse.json();
+      let scanData: ScanResult;
+      try {
+        scanData = await scanResponse.json();
+      } catch (jsonErr: any) {
+        const text = await scanResponse.text().catch(() => 'unreadable');
+        throw new Error(`Invalid response (status ${scanResponse.status}): ${text.slice(0, 100)}`);
+      }
 
-      if (!scanResponse.ok || !scanData.success) {
-        throw new Error(scanData.error || 'Failed to analyze label');
+      if (!scanData.success) {
+        throw new Error(scanData.error || 'Label analysis failed');
       }
 
       setScanResult(scanData);
