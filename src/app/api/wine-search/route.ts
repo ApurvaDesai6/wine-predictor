@@ -20,66 +20,85 @@ export interface WineSearchResponse {
   error?: string;
 }
 
-// Vivino blocks server-side requests from cloud IPs.
-// This route acts as a thin proxy that adds the right headers.
-// If Vivino blocks, we return instructions for client-side fallback.
+async function searchWithZAI(query: string): Promise<WineSearchResult[]> {
+  const apiKey = process.env.ZAI_API_KEY;
+  if (!apiKey) throw new Error('ZAI_API_KEY not set');
 
-async function searchVivino(query: string): Promise<WineSearchResult[]> {
-  // Try multiple user agents and accept headers
-  const headers: Record<string, string> = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://www.vivino.com/',
-    'Origin': 'https://www.vivino.com',
-  };
-
-  const url = `https://www.vivino.com/api/explore/explore?country_code=US&currency_code=USD&min_rating=1&order_by=relevance&order=desc&page=1&q=${encodeURIComponent(query)}`;
-
-  const res = await fetch(url, { headers });
+  // Use Z.AI's GLM-4.7-Flash (free) with web search tool
+  const res = await fetch('https://api.z.ai/api/paas/v4/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'GLM-4.7-Flash',
+      messages: [{
+        role: 'user',
+        content: `Search for wine prices for: "${query}". Find real current retail prices from wine retailers. Return ONLY a JSON array of results, no other text. Each result: {"name":"full wine name","merchant":"retailer name","price":29.99,"url":"product url","rating":4.2,"region":"wine region"}. Return at least 3 results if possible.`
+      }],
+      tools: [{
+        type: 'web_search',
+        web_search: { enable: true }
+      }],
+      max_tokens: 1000,
+    }),
+  });
 
   if (!res.ok) {
-    // If blocked, return empty so frontend can try client-side
-    console.error(`Vivino returned ${res.status} for query: ${query}`);
-    return [];
+    const err = await res.text().catch(() => '');
+    throw new Error(`Z.AI API error ${res.status}: ${err.slice(0, 200)}`);
   }
 
   const data = await res.json();
-  const matches = data?.explore_vintage?.matches || [];
+  const content = data.choices?.[0]?.message?.content || '';
 
-  return matches.slice(0, 8).map((m: any) => {
+  // Parse JSON array from response
+  const jsonMatch = content.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) return [];
+
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    return parsed.filter((r: any) => r.name).map((r: any) => ({
+      name: r.name || '',
+      merchant: r.merchant || 'Online',
+      price: typeof r.price === 'number' ? r.price : parseFloat(r.price) || 0,
+      url: r.url || '',
+      rating: r.rating || undefined,
+      vintage: r.vintage || undefined,
+      region: r.region || undefined,
+    })).slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
+// Fallback: Vivino API (works from non-cloud IPs)
+async function searchVivino(query: string): Promise<WineSearchResult[]> {
+  const url = `https://www.vivino.com/api/explore/explore?country_code=US&currency_code=USD&min_rating=1&order_by=relevance&order=desc&page=1&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36' },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data?.explore_vintage?.matches || []).slice(0, 8).map((m: any) => {
     const v = m.vintage || {};
     const w = v.wine || {};
-    const stats = v.statistics || {};
-    const price = m.price || {};
     const winery = w.winery || {};
     const region = w.region || {};
+    const price = m.price || {};
     const img = v.image?.variations?.bottle_medium || v.image?.location;
-
     return {
       name: `${winery.name || ''} ${w.name || v.name || ''}`.trim(),
       merchant: 'Vivino',
       price: price.amount || 0,
       url: `https://www.vivino.com/w/${w.id || ''}`,
-      rating: stats.ratings_average || undefined,
+      rating: v.statistics?.ratings_average || undefined,
       vintage: v.year?.toString() || undefined,
       region: region.name || undefined,
       image: img ? (img.startsWith('http') ? img : `https:${img}`) : undefined,
     };
   }).filter((r: WineSearchResult) => r.name);
-}
-
-// Fallback: use the prediction model to generate estimated prices
-function generateEstimatedResults(query: string): WineSearchResult[] {
-  // Parse what we can from the query
-  const words = query.split(/\s+/);
-  return [{
-    name: query,
-    merchant: 'Estimated',
-    price: 0,
-    url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`,
-    region: 'Search on Vivino',
-  }];
 }
 
 export async function GET(request: NextRequest) {
@@ -91,7 +110,7 @@ export async function GET(request: NextRequest) {
 
   if (!wineName && !variety) {
     return NextResponse.json(
-      { success: false, error: 'Please provide wine name or variety', results: [], query: '', sources: [], timestamp: new Date().toISOString() },
+      { success: false, error: 'Provide wine name or variety', results: [], query: '', sources: [], timestamp: new Date().toISOString() },
       { status: 400 }
     );
   }
@@ -99,35 +118,28 @@ export async function GET(request: NextRequest) {
   const query = [wineName, vintage, variety, region].filter(Boolean).join(' ');
 
   try {
-    let results = await searchVivino(query);
+    // Try Z.AI web search first (works from cloud IPs)
+    let results = await searchWithZAI(query);
+    let sources = ['Web Search'];
 
-    // If Vivino blocked us, provide a direct link
+    // Fallback to Vivino if Z.AI returns nothing
     if (results.length === 0) {
-      results = generateEstimatedResults(query);
-      return NextResponse.json({
-        success: true,
-        query,
-        results,
-        sources: ['Vivino (direct link)'],
-        timestamp: new Date().toISOString(),
-        vivinoUrl: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`,
-      });
+      results = await searchVivino(query);
+      sources = ['Vivino'];
     }
 
     return NextResponse.json({
-      success: true, query, results,
-      sources: ['Vivino'],
+      success: true, query, results, sources,
       timestamp: new Date().toISOString(),
     } as WineSearchResponse);
   } catch (error: any) {
     console.error('Wine search error:', error.message);
+    // Last resort fallback
     return NextResponse.json({
-      success: true,
-      query,
-      results: generateEstimatedResults(query),
+      success: true, query,
+      results: [{ name: query, merchant: 'Vivino', price: 0, url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`, region: 'Search on Vivino' }],
       sources: ['Vivino (direct link)'],
       timestamp: new Date().toISOString(),
-      vivinoUrl: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`,
     });
   }
 }
@@ -136,22 +148,17 @@ export async function POST(request: NextRequest) {
   try {
     const { name, winery, variety, vintage, region, country } = await request.json();
     const query = [name || winery, vintage, variety, region, country].filter(Boolean).join(' ');
-    let results = await searchVivino(query);
-
-    if (results.length === 0) {
-      results = generateEstimatedResults(query);
-    }
-
+    let results = await searchWithZAI(query);
+    if (results.length === 0) results = await searchVivino(query);
     return NextResponse.json({
       success: true, query, results,
-      sources: results[0]?.merchant === 'Estimated' ? ['Vivino (direct link)'] : ['Vivino'],
+      sources: results[0]?.merchant === 'Vivino' ? ['Vivino'] : ['Web Search'],
       timestamp: new Date().toISOString(),
-      vivinoUrl: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`,
     });
   } catch (error: any) {
     console.error('Wine search POST error:', error.message);
     return NextResponse.json(
-      { success: false, error: 'Failed to search.', query: '', results: [], sources: [], timestamp: new Date().toISOString() },
+      { success: false, error: 'Search failed. Try again.', query: '', results: [], sources: [], timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }
