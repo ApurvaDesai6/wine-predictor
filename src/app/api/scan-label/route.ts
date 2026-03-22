@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
       console.error('VLM error:', res.status, errText.slice(0, 300));
       return NextResponse.json({
         success: false,
-        error: `Vision API error (${res.status}). Try again in a moment.`
-      }, { status: 502 });
+        error: `Vision API temporarily busy. Please try again in a few seconds.`
+      }, { status: 200 });
     }
 
     const data = await res.json();
@@ -140,6 +140,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Failed to analyze label. Try again or enter details manually.',
-    }, { status: 500 });
+    }, { status: 200 });
   }
 }
