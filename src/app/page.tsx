@@ -116,6 +116,8 @@ function RatingDisplay({ rating, size = 'default' }: { rating: number; size?: 'd
 // Main Component
 export default function WineScanner() {
   const [scanning, setScanning] = useState(false);
+  const [geminiKey, setGeminiKey] = useState<string>('');
+  const [showGeminiInput, setShowGeminiInput] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -211,7 +213,7 @@ export default function WineScanner() {
         scanResponse = await fetch('/api/scan-label', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: uploadedImage }),
+          body: JSON.stringify({ image: uploadedImage, gemini_key: geminiKey || undefined }),
         });
       } catch (fetchErr: any) {
         throw new Error(`Network error (image ${imgSize}KB): ${fetchErr.message}`);
@@ -226,6 +228,9 @@ export default function WineScanner() {
       }
 
       if (!scanData.success) {
+        if ((scanData as any).needsGeminiKey) {
+          setShowGeminiInput(true);
+        }
         throw new Error(scanData.error || 'Label analysis failed');
       }
 
@@ -449,9 +454,36 @@ export default function WineScanner() {
                 >
                   <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-destructive font-medium">Scan Error</p>
                       <p className="text-destructive/80 text-sm mt-0.5">{error}</p>
+                      {showGeminiInput && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            Get a free API key at{' '}
+                            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" className="underline text-primary">
+                              Google AI Studio
+                            </a>{' '}
+                            (no credit card needed)
+                          </p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Paste Gemini API key"
+                              value={geminiKey}
+                              onChange={(e) => setGeminiKey(e.target.value)}
+                              className="flex-1 px-3 py-1.5 text-sm rounded-lg border bg-background"
+                            />
+                            <button
+                              onClick={() => { setError(null); handleScanLabel(); }}
+                              disabled={!geminiKey}
+                              className="px-3 py-1.5 text-sm rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
