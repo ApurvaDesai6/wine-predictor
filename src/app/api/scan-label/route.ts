@@ -50,7 +50,14 @@ export async function POST(request: NextRequest) {
     if (!res.ok) {
       const err = await res.text().catch(() => '');
       console.error('VLM error:', res.status, err.slice(0, 200));
-      return NextResponse.json({ success: false, error: 'Vision API busy. Try again in a moment.' });
+      const errObj = JSON.parse(err).error || {};
+      const isOverloaded = errObj.code === '1305' || res.status === 429;
+      return NextResponse.json({
+        success: false,
+        error: isOverloaded
+          ? 'The free vision model is temporarily at capacity. Try again in 30 seconds, or enter the wine name manually below.'
+          : `Vision API error. Try entering the wine name manually.`
+      });
     }
 
     const data = await res.json();
