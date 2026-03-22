@@ -19,52 +19,91 @@ export interface WineSearchResponse {
   error?: string;
 }
 
-async function searchWithGoogle(query: string): Promise<WineSearchResult[]> {
-  const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
-  const cx = process.env.GOOGLE_SEARCH_CX;
+async function scrapeWineSearcher(query: string): Promise<WineSearchResult[]> {
+  const url = `https://www.wine-searcher.com/find/${encodeURIComponent(query)}/1/usa`;
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  });
 
-  if (!apiKey || !cx) {
-    throw new Error('Google Search API not configured. Set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX.');
-  }
-
-  const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}&num=10`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Google Search API error: ${res.status}`);
-  const data = await res.json();
-
+  if (!res.ok) return [];
+  const html = await res.text();
   const results: WineSearchResult[] = [];
-  const items = data.items || [];
 
-  for (const item of items) {
-    const hostname = new URL(item.link).hostname;
-    let merchant = hostname.replace('www.', '').split('.')[0];
-    merchant = merchant.charAt(0).toUpperCase() + merchant.slice(1);
+  // Parse wine listings from HTML
+  // Wine-Searcher uses structured data we can extract with regex
+  const pricePattern = /class="price"[^>]*>\s*\$\s*([\d,.]+)/gi;
+  const namePattern = /class="wine-name[^"]*"[^>]*>([^<]+)/gi;
+  const merchantPattern = /class="merchant[^"]*"[^>]*>([^<]+)/gi;
 
-    if (hostname.includes('wine-searcher')) merchant = 'Wine-Searcher';
-    else if (hostname.includes('vivino')) merchant = 'Vivino';
-    else if (hostname.includes('wine.com')) merchant = 'Wine.com';
-    else if (hostname.includes('totalwine')) merchant = 'Total Wine';
-
-    const snippet = item.snippet || '';
-    const priceMatch = snippet.match(/\$(\d+(?:\.\d{2})?)/);
-    const ratingMatch = snippet.match(/(\d(?:\.\d)?)\s*(?:\/5|stars?)/i);
-    const vintageMatch = snippet.match(/\b(19[9]\d|20[0-2]\d)\b/);
-
+  // Simpler: extract all price+name pairs from the page
+  const listingPattern = /<a[^>]*href="(\/merchant\/[^"]*)"[^>]*>([^<]+)<\/a>[\s\S]*?\$([\d,.]+)/gi;
+  let match;
+  while ((match = listingPattern.exec(html)) !== null && results.length < 8) {
     results.push({
-      name: item.title || '',
-      merchant,
-      price: priceMatch ? parseFloat(priceMatch[1]) : 0,
-      url: item.link,
-      rating: ratingMatch ? parseFloat(ratingMatch[1]) : undefined,
-      vintage: vintageMatch ? vintageMatch[1] : undefined,
+      name: match[2].trim(),
+      merchant: match[2].trim(),
+      price: parseFloat(match[3].replace(',', '')),
+      url: `https://www.wine-searcher.com${match[1]}`,
     });
   }
 
-  return results.sort((a, b) => {
-    if (a.price && !b.price) return -1;
-    if (!a.price && b.price) return 1;
-    return (a.price || 0) - (b.price || 0);
-  }).slice(0, 8);
+  // Fallback: extract any price mentions with surrounding context
+  if (results.length === 0) {
+    const priceBlocks = html.match(/[^<]{0,100}\$\d+(?:\.\d{2})?[^<]{0,100}/g) || [];
+    for (const block of priceBlocks.slice(0, 8)) {
+      const p = block.match(/\$([\d,.]+)/);
+      if (p) {
+        const price = parseFloat(p[1].replace(',', ''));
+        if (price >= 5 && price <= 5000) {
+          results.push({
+            name: block.replace(/<[^>]*>/g, '').trim().slice(0, 80),
+            merchant: 'Wine-Searcher',
+            price,
+            url: `https://www.wine-searcher.com/find/${encodeURIComponent(query)}`,
+          });
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+async function scrapeVivino(query: string): Promise<WineSearchResult[]> {
+  try {
+    const url = `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+    });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const results: WineSearchResult[] = [];
+
+    const priceMatches = html.match(/\$([\d,.]+)/g) || [];
+    const ratingMatches = html.match(/([\d.]+)\s*<\/span>\s*<span[^>]*>[\d,]+ ratings/gi) || [];
+
+    for (let i = 0; i < Math.min(priceMatches.length, 5); i++) {
+      const price = parseFloat(priceMatches[i].replace('$', '').replace(',', ''));
+      if (price >= 5 && price <= 5000) {
+        results.push({
+          name: query,
+          merchant: 'Vivino',
+          price,
+          url: `https://www.vivino.com/search/wines?q=${encodeURIComponent(query)}`,
+        });
+      }
+    }
+    return results;
+  } catch {
+    return [];
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -81,23 +120,36 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const query = [wineName, vintage, variety, region, 'wine price buy'].filter(Boolean).join(' ');
+  const query = [wineName, vintage, variety, region].filter(Boolean).join(' ');
 
   try {
-    const results = await searchWithGoogle(query);
-    const sources = [...new Set(results.map(r => r.merchant))];
+    const [wsResults, vivinoResults] = await Promise.allSettled([
+      scrapeWineSearcher(query),
+      scrapeVivino(query),
+    ]);
+
+    const allResults = [
+      ...(wsResults.status === 'fulfilled' ? wsResults.value : []),
+      ...(vivinoResults.status === 'fulfilled' ? vivinoResults.value : []),
+    ].sort((a, b) => {
+      if (a.price && !b.price) return -1;
+      if (!a.price && b.price) return 1;
+      return (a.price || 0) - (b.price || 0);
+    }).slice(0, 8);
+
+    const sources = [...new Set(allResults.map(r => r.merchant))];
 
     return NextResponse.json({
       success: true,
       query,
-      results,
+      results: allResults,
       sources,
       timestamp: new Date().toISOString(),
     } as WineSearchResponse);
   } catch (error: any) {
     console.error('Wine search error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to search for wine prices.', query, results: [], sources: [], timestamp: new Date().toISOString() },
+      { success: false, error: 'Failed to search for wine prices. Try again.', query, results: [], sources: [], timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }
@@ -106,21 +158,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { name, winery, variety, vintage, region, country } = await request.json();
-    const query = [name || winery, vintage, variety, region, country, 'wine price buy online'].filter(Boolean).join(' ');
-    const results = await searchWithGoogle(query);
-    const sources = [...new Set(results.map(r => r.merchant))];
+    const query = [name || winery, vintage, variety, region, country].filter(Boolean).join(' ');
+
+    const [wsResults, vivinoResults] = await Promise.allSettled([
+      scrapeWineSearcher(query),
+      scrapeVivino(query),
+    ]);
+
+    const allResults = [
+      ...(wsResults.status === 'fulfilled' ? wsResults.value : []),
+      ...(vivinoResults.status === 'fulfilled' ? vivinoResults.value : []),
+    ].sort((a, b) => (a.price || 0) - (b.price || 0)).slice(0, 10);
 
     return NextResponse.json({
       success: true,
       query,
-      results,
-      sources,
+      results: allResults,
+      sources: [...new Set(allResults.map(r => r.merchant))],
       timestamp: new Date().toISOString(),
     } as WineSearchResponse);
   } catch (error: any) {
     console.error('Wine search POST error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to search for wine prices', query: '', results: [], sources: [], timestamp: new Date().toISOString() },
+      { success: false, error: 'Failed to search.', query: '', results: [], sources: [], timestamp: new Date().toISOString() },
       { status: 500 }
     );
   }

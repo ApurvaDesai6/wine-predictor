@@ -320,24 +320,19 @@ def target_encode(df, col, target, weight=10):
                 <h3 className="text-lg font-semibold text-foreground mt-8 mb-3">API Integration</h3>
                 <CodeBlock
                   language="typescript"
-                  code={`// VLM Label Analysis (Next.js API Route)
-const res = await fetch('https://api.openai.com/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': \`Bearer \${process.env.OPENAI_API_KEY}\`,
-  },
-  body: JSON.stringify({
-    model: 'gpt-4o-mini',
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: WINE_EXTRACTION_PROMPT },
-        { type: 'image_url', image_url: { url: image } }
-      ]
-    }]
-  }),
-});
+                  code={`// Label Analysis via Tesseract.js OCR (Next.js API Route)
+// No API keys needed - runs entirely server-side
+import Tesseract from 'tesseract.js';
+
+export async function POST(request: NextRequest) {
+  const { image } = await request.json();
+  const buffer = Buffer.from(image.split(',')[1], 'base64');
+  const { data } = await Tesseract.recognize(buffer, 'eng');
+  
+  // Parse wine info from OCR text using pattern matching
+  const variety = findVariety(data.text);
+  const country = findCountry(data.text);
+  const vintage = findVintage(data.text);
   
   // Parse structured wine data from VLM response
   const wineData = parseWineFromVLM(response);
@@ -468,7 +463,7 @@ const res = await fetch('https://api.openai.com/v1/chat/completions', {
                         'Next.js API Routes',
                         'CatBoost, XGBoost, LightGBM',
                         'scikit-learn for preprocessing',
-                        'VLM via OpenAI GPT-4o-mini Vision',
+                        'OCR via Tesseract.js (no API key)',
                         'Web search for live prices',
                       ].map((item) => (
                         <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
