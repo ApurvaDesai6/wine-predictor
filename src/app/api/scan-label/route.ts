@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import ZAI from 'z-ai-web-dev-sdk';
 
 // Province mappings for different countries
 const PROVINCE_MAP: Record<string, string> = {
@@ -214,13 +213,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize VLM
-    const zai = await ZAI.create();
-    
-    // Use createVision for image analysis
-    const response = await zai.chat.completions.createVision({
-      messages: [
-        {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { success: false, error: 'Vision API not configured. Set OPENAI_API_KEY.' },
+        { status: 500 }
+      );
+    }
+
+    const visionRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{
           role: 'user',
           content: [
             {
@@ -240,20 +249,25 @@ Extract these fields:
 - tasting_notes: any tasting notes visible
 - all_text: all visible text from the label
 
-Return ONLY valid JSON like:
-{"winery":"...","wine_name":"...","variety":"...","region":"...","country":"...","vintage":"...","rating":4.2,"price":45,"alcohol_content":"14.5%","tasting_notes":"...","all_text":"..."}`
+Return ONLY valid JSON.`
             },
             {
               type: 'image_url',
               image_url: { url: image }
             }
           ]
-        }
-      ],
-      thinking: { type: 'disabled' }
+        }],
+        max_tokens: 1000,
+      }),
     });
 
-    const analysisText = response.choices[0]?.message?.content || '';
+    if (!visionRes.ok) {
+      const err = await visionRes.text();
+      throw new Error(`OpenAI API error: ${visionRes.status} ${err}`);
+    }
+
+    const visionData = await visionRes.json();
+    const analysisText = visionData.choices?.[0]?.message?.content || '';
     console.log('VLM Response:', analysisText);
     
     // Parse the JSON response

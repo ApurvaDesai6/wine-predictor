@@ -321,14 +321,14 @@ def target_encode(df, col, target, weight=10):
                 <CodeBlock
                   language="typescript"
                   code={`// VLM Label Analysis (Next.js API Route)
-import ZAI from 'z-ai-web-dev-sdk';
-
-export async function POST(request: NextRequest) {
-  const { image } = await request.json();
-  
-  const zai = await ZAI.create();
-  
-  const response = await zai.chat.completions.createVision({
+const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': \`Bearer \${process.env.OPENAI_API_KEY}\`,
+  },
+  body: JSON.stringify({
+    model: 'gpt-4o-mini',
     messages: [{
       role: 'user',
       content: [
@@ -336,7 +336,8 @@ export async function POST(request: NextRequest) {
         { type: 'image_url', image_url: { url: image } }
       ]
     }]
-  });
+  }),
+});
   
   // Parse structured wine data from VLM response
   const wineData = parseWineFromVLM(response);
@@ -467,7 +468,7 @@ export async function POST(request: NextRequest) {
                         'Next.js API Routes',
                         'CatBoost, XGBoost, LightGBM',
                         'scikit-learn for preprocessing',
-                        'VLM via z-ai-web-dev-sdk',
+                        'VLM via OpenAI GPT-4o-mini Vision',
                         'Web search for live prices',
                       ].map((item) => (
                         <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
