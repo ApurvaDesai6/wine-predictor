@@ -39,7 +39,12 @@ async function searchWithZAI(query: string): Promise<WineSearchResult[]> {
       }],
       tools: [{
         type: 'web_search',
-        web_search: { enable: true }
+        web_search: {
+          enable: 'True',
+          search_result: 'True',
+          search_engine: 'search-prime',
+          count: '10',
+        }
       }],
       max_tokens: 1000,
     }),
