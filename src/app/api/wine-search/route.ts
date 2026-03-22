@@ -57,25 +57,40 @@ async function searchWithZAI(query: string): Promise<WineSearchResult[]> {
 
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content || '';
+  console.log('Z.AI search response:', content.slice(0, 500));
 
-  // Parse JSON array from response
+  // Try to parse JSON array from response
   const jsonMatch = content.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) return [];
-
-  try {
-    const parsed = JSON.parse(jsonMatch[0]);
-    return parsed.filter((r: any) => r.name).map((r: any) => ({
-      name: r.name || '',
-      merchant: r.merchant || 'Online',
-      price: typeof r.price === 'number' ? r.price : parseFloat(r.price) || 0,
-      url: r.url || '',
-      rating: r.rating || undefined,
-      vintage: r.vintage || undefined,
-      region: r.region || undefined,
-    })).slice(0, 8);
-  } catch {
-    return [];
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return parsed.filter((r: any) => r.name).map((r: any) => ({
+        name: r.name || '',
+        merchant: r.merchant || 'Online',
+        price: typeof r.price === 'number' ? r.price : parseFloat(r.price) || 0,
+        url: r.url || '',
+        rating: r.rating || undefined,
+        vintage: r.vintage || undefined,
+        region: r.region || undefined,
+      })).slice(0, 8);
+    } catch { /* fall through */ }
   }
+
+  // Also check web_search results in the response
+  const webResults = data.web_search || [];
+  if (webResults.length > 0) {
+    return webResults.slice(0, 8).map((r: any) => {
+      const priceMatch = (r.content || '').match(/\$(\d+(?:\.\d{2})?)/);
+      return {
+        name: r.title || '',
+        merchant: r.media || 'Web',
+        price: priceMatch ? parseFloat(priceMatch[1]) : 0,
+        url: r.link || '',
+      };
+    }).filter((r: WineSearchResult) => r.price > 0);
+  }
+
+  return [];
 }
 
 // Fallback: Vivino API (works from non-cloud IPs)
