@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Wine Price Prediction Engine | ML Portfolio Project",
   description: "Machine learning powered wine price prediction using ensemble methods, NLP feature extraction, and advanced hyperparameter optimization. Built with Next.js, CatBoost, XGBoost, and LightGBM.",
   keywords: ["Wine", "Machine Learning", "Price Prediction", "XGBoost", "LightGBM", "CatBoost", "NLP", "BERT", "Next.js", "Portfolio"],
-  authors: [{ name: "Wine ML Project" }],
+  authors: [{ name: "Apurva Desai" }],
   icons: {
     icon: "/wine-icon.svg",
   },

@@ -49,7 +49,7 @@ export function Footer() {
                 Download Report
               </a>
               <a
-                href="https://github.com"
+                href="https://github.com/ApurvaDesai6/wine-predictor"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-slate-400 hover:text-amber-400 transition-colors flex items-center gap-1.5"
